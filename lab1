@@ -1,0 +1,78 @@
+----------------------------------------------------------------------------------------------------------------------
+
+#!/bin/bash
+
+source ~cs152/sp22/cs152.lab1.bashrc
+
+cd sims/verilator
+
+make CONFIG=Sodor5StageConfig
+
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/dhrystone.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/median.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/multiply.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/qsort.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/rsort.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/towers.riscv
+make CONFIG=Sodor5StageConfig run-binary BINARY=../../generators/riscv-sodor/riscv-bmarks/vvadd.riscv
+
+cd ../..
+
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/dhrystone.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/median.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/multiply.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/qsort.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/rsort.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/towers.out
+generators/riscv-sodor/scripts/tracer.py sims/verilator/output/chipyard.TestHarness.Sodor5StageConfig/vvadd.out
+
+----------------------------------------------------------------------------------------------------------------------
+
+./run-tests.sh > results.txt
+
+----------------------------------------------------------------------------------------------------------------------
+
+
+lines 224 to 250
+
+   // Stall signal stalls instruction fetch & decode stages,
+   // inserts NOP into execute stage,  and drains execute, memory, and writeback stages
+   // stalls on I$ misses and on hazards
+   if (USE_FULL_BYPASSING)
+   {
+      // stall for load-use hazard
+      // stall := ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs1_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs1_oen) ||
+               ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs2_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs2_oen) ||
+               (exe_reg_is_csr)
+
+      // TO RETURN TO NORMAL PROCESSOR: REMOVE THIS LINE AND UNCOMMENT THE PREVIOUS LINE
+      // THIS SECTION SIMULATES REMOVING ONE BYPASS PATH
+      stall := ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs1_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs1_oen) ||
+               ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs2_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs2_oen) ||
+               (exe_reg_is_csr) ||
+               ((wb_reg_wbaddr  === dec_rs2_addr) && (dec_rs2_addr =/= 0.U) &&  wb_reg_ctrl_rf_wen && dec_rs2_oen)
+
+   }
+   else
+   {
+      // stall for all hazards
+      stall := ((exe_reg_wbaddr === dec_rs1_addr) && (dec_rs1_addr =/= 0.U) && exe_reg_ctrl_rf_wen && dec_rs1_oen) ||
+               ((mem_reg_wbaddr === dec_rs1_addr) && (dec_rs1_addr =/= 0.U) && mem_reg_ctrl_rf_wen && dec_rs1_oen) ||
+               ((wb_reg_wbaddr  === dec_rs1_addr) && (dec_rs1_addr =/= 0.U) &&  wb_reg_ctrl_rf_wen && dec_rs1_oen) ||
+               ((exe_reg_wbaddr === dec_rs2_addr) && (dec_rs2_addr =/= 0.U) && exe_reg_ctrl_rf_wen && dec_rs2_oen) ||
+               ((mem_reg_wbaddr === dec_rs2_addr) && (dec_rs2_addr =/= 0.U) && mem_reg_ctrl_rf_wen && dec_rs2_oen) ||
+               ((wb_reg_wbaddr  === dec_rs2_addr) && (dec_rs2_addr =/= 0.U) &&  wb_reg_ctrl_rf_wen && dec_rs2_oen) ||
+               ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs1_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs1_oen) ||
+               ((exe_inst_is_load) && (exe_reg_wbaddr === dec_rs2_addr) && (exe_reg_wbaddr =/= 0.U) && dec_rs2_oen) ||
+               ((exe_reg_is_csr))
+   }
+
+
+   // stall full pipeline on D$ miss
+   val dmem_val   = io.dat.mem_ctrl_dmem_val
+   full_stall := !((dmem_val && io.dmem.resp.valid) || !dmem_val)
+
+
+
+
+
